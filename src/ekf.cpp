@@ -1,5 +1,8 @@
 #include <stdlib.h>
 #include <iostream>
+
+#define _USE_MATH_DEFINES
+
 #include <math.h>
 #include "ekf.h"
 
@@ -43,10 +46,27 @@ Pose2D EKF4MobileRobot::operator()(const Velocity2D& v_odom, const Velocity2D& v
   Matrix33 d = rotationMatrix(theta_acc);
 
   predictedPose = estimatedPose + b * dox;
+  while (predictedPose(2) > M_PI) {
+    predictedPose.set(2, predictedPose(2)-2*M_PI);
+  }
+
+  while (predictedPose(2) < -M_PI) {
+    predictedPose.set(2, predictedPose(2)+2*M_PI);
+  }
+  
   predictedCovarianceMatrix = estimatedCovarianceMatrix + odometryCovarianceMatrix * b * transpose(b);
 
   Matrix33 gain = predictedCovarianceMatrix * inverse(predictedCovarianceMatrix + imuCovarianceMatrix);
   estimatedPose = predictedPose  + gain * (estimatedPose + d * dax - predictedPose);
+
+  while (estimatedPose(2) > M_PI) {
+    estimatedPose.set(2, estimatedPose(2)-2*M_PI);
+  }
+
+  while (estimatedPose(2) < -M_PI) {
+    estimatedPose.set(2, estimatedPose(2)+2*M_PI);
+  }
+
   estimatedCovarianceMatrix = (eye - gain) * predictedCovarianceMatrix;
   return estimatedPose;
 }
